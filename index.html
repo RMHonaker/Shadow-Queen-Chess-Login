@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadow Queen Chess</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap');
+:root {
+  --bg:#0d0f14; --surface:#161922; --surface2:#1e2330; --border:#2a3147;
+  --gold:#c9a84c; --gold2:#e8c97a; --shadow-purple:#9b30d0; --shadow-light:#cc88ff;
+  --text:#d4cfc8; --text-dim:#7a7870;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Crimson Pro',Georgia,serif;background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 20% 20%,rgba(123,63,160,0.07) 0%,transparent 55%),
+             radial-gradient(ellipse at 80% 80%,rgba(201,168,76,0.05) 0%,transparent 55%);}
+h1{font-family:'Cinzel',serif;font-weight:900;font-size:clamp(20px,4vw,34px);
+  letter-spacing:0.15em;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 50%,var(--gold) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  text-align:center;margin-bottom:3px;}
+.subtitle{font-size:11px;color:var(--text-dim);letter-spacing:0.3em;text-transform:uppercase;text-align:center;margin-bottom:20px;}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{width:100%;max-width:400px;display:none;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:14px;}
+.login-card h2{font-family:'Cinzel',serif;font-size:13px;font-weight:600;color:var(--gold);
+  letter-spacing:0.2em;margin-bottom:18px;text-transform:uppercase;text-align:center;}
+.login-divider{display:flex;align-items:center;gap:10px;margin:14px 0;}
+.login-divider span{font-size:11px;color:var(--text-dim);white-space:nowrap;letter-spacing:0.1em;}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.login-error{font-size:12px;color:#e74c3c;text-align:center;min-height:16px;margin-top:8px;font-family:'Cinzel',serif;letter-spacing:0.05em;}
+.login-footer{font-size:11px;color:var(--text-dim);text-align:center;margin-top:10px;font-family:'Crimson Pro',serif;}
+.login-footer a{color:var(--gold);cursor:pointer;text-decoration:underline;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  padding:13px;font-family:'Cinzel',serif;font-size:12px;font-weight:600;letter-spacing:0.1em;
+  color:var(--text);background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;cursor:pointer;transition:all 0.2s;margin-bottom:8px;text-transform:uppercase;}
+.btn-google:hover{border-color:var(--gold);background:rgba(201,168,76,0.06);}
+.btn-google svg{width:18px;height:18px;flex-shrink:0;}
+.skip-link{font-size:11px;color:var(--text-dim);text-align:center;margin-top:12px;
+  font-family:'Crimson Pro',serif;cursor:pointer;}
+.skip-link a{color:var(--text-dim);text-decoration:underline;cursor:pointer;}
+.skip-link a:hover{color:var(--gold);}
+
+/* ── USER BAR (shown when logged in) ── */
+#user-bar{display:none;width:100%;max-width:600px;
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:8px 14px;margin-bottom:12px;
+  align-items:center;justify-content:space-between;gap:10px;}
+#user-bar.visible{display:flex;}
+.user-info{display:flex;align-items:center;gap:10px;}
+.user-avatar{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);object-fit:cover;}
+.user-avatar-placeholder{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);
+  background:var(--surface2);display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:13px;color:var(--gold);}
+.user-name{font-family:'Cinzel',serif;font-size:12px;color:var(--gold);letter-spacing:0.08em;}
+.user-email{font-size:10px;color:var(--text-dim);}
+.user-actions{display:flex;align-items:center;gap:8px;}
+.btn-signout{background:transparent;border:1px solid var(--border);border-radius:6px;
+  padding:5px 12px;font-family:'Cinzel',serif;font-size:10px;color:var(--text-dim);
+  cursor:pointer;letter-spacing:0.08em;transition:all 0.18s;}
+.btn-signout:hover{border-color:var(--gold);color:var(--gold);}
+.user-stats{font-family:'Cinzel',serif;font-size:10px;color:var(--text-dim);letter-spacing:0.06em;}
+
+/* LOBBY */
+#lobby{width:100%;max-width:460px;display:none;}
+.lobby-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:14px;}
+.lobby-card h2{font-family:'Cinzel',serif;font-size:13px;font-weight:600;color:var(--gold);letter-spacing:0.2em;margin-bottom:14px;text-transform:uppercase;}
+.spectator-card{background:linear-gradient(135deg,rgba(123,63,160,0.12),rgba(80,30,120,0.08));border-color:rgba(176,111,216,0.3);}
+.spectator-card h2{color:var(--shadow-light);}
+.btn{display:block;width:100%;padding:13px;font-family:'Cinzel',serif;font-size:13px;font-weight:600;
+  letter-spacing:0.12em;color:#0d0f14;background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border:none;border-radius:8px;cursor:pointer;transition:all 0.2s;margin-bottom:8px;text-transform:uppercase;}
+.btn:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 4px 18px rgba(201,168,76,0.3);}
+.btn:disabled{opacity:0.35;cursor:not-allowed;transform:none;filter:none;}
+.btn.secondary{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn.secondary:hover{background:rgba(201,168,76,0.08);}
+.btn.purple{background:linear-gradient(135deg,#5a1f80,#7b3fa0);color:#e8d0ff;border:1px solid #9b5fc0;}
+.btn.purple:hover{filter:brightness(1.15);box-shadow:0 4px 18px rgba(123,63,160,0.4);}
+.btn.danger{background:linear-gradient(135deg,#8b0000,#c0392b);color:#ffd5d5;border:1px solid #e74c3c;}
+.btn.danger:hover{filter:brightness(1.1);}
+.input-row{display:flex;gap:8px;margin-bottom:8px;}
+input[type=text],input[type=email],input[type=password],select{flex:1;background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:11px 13px;font-size:15px;color:var(--text);
+  font-family:'Crimson Pro',serif;outline:none;transition:border-color 0.2s;}
+input[type=text]:focus,input[type=email]:focus,input[type=password]:focus,select:focus{border-color:var(--gold);}
+input[type=text]::placeholder,input[type=email]::placeholder,input[type=password]::placeholder{color:var(--text-dim);}
+select option{background:var(--surface2);}
+.share-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:11px 13px;font-size:12px;color:var(--text-dim);word-break:break-all;
+  margin-bottom:8px;display:none;}
+.share-label{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.2em;color:var(--gold);text-transform:uppercase;margin-bottom:5px;}
+#lobby-msg{font-size:13px;color:var(--text-dim);text-align:center;min-height:18px;margin-top:6px;}
+.time-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.time-row label{font-family:'Cinzel',serif;font-size:11px;color:var(--gold);letter-spacing:0.1em;white-space:nowrap;}
+
+/* GAME */
+#game{display:none;width:100%;max-width:600px;}
+.game-header{display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;gap:8px;}
+.player-badge{font-family:'Cinzel',serif;font-size:12px;letter-spacing:0.08em;padding:5px 12px;border-radius:6px;white-space:nowrap;}
+.badge-white{background:rgba(240,217,181,0.12);color:#f0d9b5;border:1px solid rgba(240,217,181,0.25);}
+.badge-black{background:rgba(80,70,60,0.4);color:#d4aa70;border:1px solid rgba(181,136,99,0.3);}
+.badge-spectator{background:rgba(123,63,160,0.2);color:var(--shadow-light);border:1px solid rgba(123,63,160,0.4);}
+.captures-bar{display:flex;justify-content:space-between;align-items:center;
+  padding:5px 10px;min-height:26px;font-size:13px;}
+.captures-pieces{display:flex;align-items:center;flex-wrap:wrap;gap:1px;line-height:1;}
+.captures-piece{font-size:14px;opacity:0.85;}
+.captures-score{font-family:'Cinzel',serif;font-size:16px;font-weight:700;
+  color:var(--gold);margin-left:6px;white-space:nowrap;}
+.captures-label{font-family:'Cinzel',serif;font-size:14px;color:var(--text-dim);
+  letter-spacing:0.1em;text-transform:uppercase;margin-right:8px;}
+.timer-bar{display:flex;justify-content:space-between;align-items:stretch;
+  gap:8px;margin-bottom:10px;}
+.timer-box{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;text-align:center;}
+.timer-box.active-timer{border-color:var(--gold);background:rgba(201,168,76,0.08);
+  box-shadow:0 0 12px rgba(201,168,76,0.15);}
+.timer-box.urgent{border-color:#e74c3c !important;background:rgba(192,57,43,0.12) !important;
+  animation:urgentPulse 1s ease-in-out infinite;}
+@keyframes urgentPulse{0%,100%{box-shadow:0 0 6px rgba(231,76,60,0.3);}50%{box-shadow:0 0 18px rgba(231,76,60,0.6);}}
+.timer-label{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.15em;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;}
+.timer-value{font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--gold);letter-spacing:0.05em;}
+.timer-box.urgent .timer-value{color:#e74c3c;}
+#turn-display{font-family:'Cinzel',serif;font-size:13px;color:var(--gold);letter-spacing:0.1em;text-align:center;}
+#status-display{font-family:'Cinzel',serif;font-size:22px;font-weight:900;color:#e74c3c;
+  letter-spacing:0.15em;min-height:26px;text-align:center;margin-bottom:6px;}
+#sq-phase-banner{display:none;background:linear-gradient(135deg,rgba(123,63,160,0.25),rgba(80,30,120,0.2));
+  border:1px solid rgba(176,111,216,0.5);border-radius:8px;padding:10px 14px;text-align:center;
+  font-family:'Cinzel',serif;font-size:12px;color:var(--shadow-light);letter-spacing:0.08em;
+  margin-bottom:10px;animation:glowPulse 2s ease-in-out infinite;}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 8px rgba(176,111,216,0.2);}50%{box-shadow:0 0 20px rgba(176,111,216,0.5);}}
+.board-wrap{position:relative;margin:0 auto;}
+.board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+  border:3px solid #070810;box-shadow:0 0 50px rgba(0,0,0,0.8);
+  width:min(560px,calc(100vw - 32px));height:min(560px,calc(100vw - 32px));}
+.sq{display:flex;justify-content:center;align-items:center;cursor:pointer;position:relative;transition:background 0.08s;}
+.sq.light{background:#f0d9b5;} .sq.dark{background:#b58863;}
+.piece{font-size:clamp(26px,5vw,44px);line-height:1;user-select:none;pointer-events:none;position:relative;z-index:2;transition:transform 0.12s;}
+.sq.light .piece.p-white,.sq.dark .piece.p-white{color:#fffef0;text-shadow:-1px -1px 0 #2a1a00,1px -1px 0 #2a1a00,-1px 1px 0 #2a1a00,1px 1px 0 #2a1a00,0 0 3px rgba(0,0,0,0.6);}
+.sq.light .piece.p-black,.sq.dark .piece.p-black{color:#1a1008;text-shadow:-1px -1px 0 #d4aa55,1px -1px 0 #d4aa55,-1px 1px 0 #d4aa55,1px 1px 0 #d4aa55,0 0 3px rgba(201,168,76,0.5);}
+.sq.selected{background:rgba(201,168,76,0.6) !important;} .sq.selected .piece{transform:scale(1.1);}
+.sq.valid-move::after{content:'';position:absolute;width:32%;height:32%;border-radius:50%;background:rgba(0,0,0,0.18);z-index:1;pointer-events:none;}
+.sq.valid-capture{outline:3px solid rgba(0,0,0,0.2);outline-offset:-3px;}
+.sq.check-sq{background:rgba(192,57,43,0.65) !important;}
+.sq.last-move-from{background:rgba(201,168,76,0.25) !important;}
+.sq.last-move-to{background:rgba(201,168,76,0.45) !important;}
+.shadow-dot{position:absolute;top:3px;right:3px;width:9px;height:9px;border-radius:50%;
+  background:var(--shadow-purple);box-shadow:0 0 6px var(--shadow-light);z-index:3;display:none;}
+.shadow-dot.visible{display:block;}
+.shadow-dot.revealed{background:var(--shadow-light);box-shadow:0 0 10px var(--shadow-light),0 0 22px var(--shadow-purple);animation:pulseSQ 1.4s ease-in-out infinite;}
+@keyframes pulseSQ{0%,100%{box-shadow:0 0 6px var(--shadow-light),0 0 16px var(--shadow-purple);}50%{box-shadow:0 0 14px var(--shadow-light),0 0 32px var(--shadow-purple);}}
+.coord{position:absolute;font-size:9px;font-weight:700;opacity:0.45;font-family:'Cinzel',serif;pointer-events:none;}
+.coord-rank{bottom:1px;left:2px;} .coord-file{top:1px;right:2px;}
+.waiting-overlay{position:absolute;inset:0;background:rgba(10,12,18,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;border-radius:2px;}
+.waiting-overlay p{font-family:'Cinzel',serif;font-size:14px;color:var(--gold);letter-spacing:0.15em;animation:fadePulse 2s ease-in-out infinite;}
+@keyframes fadePulse{0%,100%{opacity:0.45;}50%{opacity:1;}}
+.reveal-flash{display:none;position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,#4a0080,#7b3fa0);border:2px solid var(--shadow-light);
+  border-radius:12px;padding:14px 24px;text-align:center;z-index:200;
+  box-shadow:0 0 30px rgba(176,111,216,0.6);animation:revealFlashIn 0.4s ease-out;}
+.reveal-flash.visible{display:block;}
+.reveal-flash-title{font-family:'Cinzel',serif;font-size:16px;font-weight:900;
+  color:var(--shadow-light);letter-spacing:0.15em;margin-bottom:4px;}
+.reveal-flash-body{font-family:'Crimson Pro',serif;font-size:13px;color:#e0c8ff;}
+@keyframes revealFlashIn{from{opacity:0;transform:translateX(-50%) translateY(-20px);}
+  to{opacity:1;transform:translateX(-50%) translateY(0);}}
+.review-bar{display:none;background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:8px 14px;margin-bottom:8px;
+  align-items:center;justify-content:center;gap:12px;}
+.review-bar.visible{display:flex;}
+.review-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:7px 14px;font-family:'Cinzel',serif;font-size:13px;color:var(--gold);
+  cursor:pointer;transition:all 0.18s;letter-spacing:0.05em;}
+.review-btn:hover{border-color:var(--gold);background:rgba(201,168,76,0.1);}
+.review-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.review-counter{font-family:'Cinzel',serif;font-size:12px;color:var(--text-dim);
+  letter-spacing:0.1em;min-width:80px;text-align:center;}
+.review-live{font-family:'Cinzel',serif;font-size:11px;color:var(--gold);
+  letter-spacing:0.15em;text-transform:uppercase;}
+.confirm-bar{display:none;gap:8px;margin-top:10px;
+  background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.05));
+  border:1px solid rgba(201,168,76,0.3);border-radius:10px;
+  padding:10px 14px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+.confirm-bar.visible{display:flex;}
+.confirm-msg{font-family:'Cinzel',serif;font-size:12px;color:var(--gold);letter-spacing:0.08em;flex:1;}
+.confirm-btns{display:flex;gap:8px;}
+.btn-confirm{padding:10px 20px;font-family:'Cinzel',serif;font-size:13px;font-weight:700;
+  border:none;border-radius:8px;cursor:pointer;letter-spacing:0.1em;transition:all 0.2s;}
+.btn-confirm.accept{background:linear-gradient(135deg,#1a6b1a,#27ae60);color:#fff;}
+.btn-confirm.accept:hover{filter:brightness(1.15);transform:translateY(-1px);}
+.btn-confirm.cancel{background:linear-gradient(135deg,#8b0000,#c0392b);color:#fff;}
+.btn-confirm.cancel:hover{filter:brightness(1.15);transform:translateY(-1px);}
+.game-controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.game-controls .btn{margin:0;} .ctrl-activate{flex:2;}
+#spectator-panel{display:none;background:linear-gradient(135deg,rgba(123,63,160,0.12),rgba(80,30,120,0.08));
+  border:1px solid rgba(176,111,216,0.25);border-radius:10px;padding:12px 14px;margin-top:12px;}
+#spectator-panel h3{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.2em;color:var(--shadow-light);text-transform:uppercase;margin-bottom:8px;}
+.spec-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.spec-piece{font-size:18px;} .spec-label{font-family:'Cinzel',serif;font-size:11px;color:var(--text-dim);}
+.spec-val{color:var(--shadow-light);font-family:'Cinzel',serif;font-size:11px;}
+#network-status{font-size:11px;color:var(--text-dim);}
+.conn-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;background:var(--text-dim);}
+.conn-dot.online{background:#5ec87a;box-shadow:0 0 5px #5ec87a;}
+#move-log-wrap{margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;max-height:100px;overflow-y:auto;}
+#move-log-wrap h3{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.2em;color:var(--text-dim);text-transform:uppercase;margin-bottom:6px;}
+#move-log{font-size:12px;color:var(--text-dim);line-height:1.9;}
+.notif-bar{background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);border-radius:8px;padding:8px 12px;
+  text-align:center;font-family:'Cinzel',serif;font-size:11px;color:var(--gold);letter-spacing:0.1em;margin-top:10px;display:none;}
+.promo-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:100;align-items:center;justify-content:center;}
+.promo-modal.active{display:flex;}
+.promo-inner{background:var(--surface);border:1px solid var(--gold);border-radius:12px;padding:22px;text-align:center;}
+.promo-inner h2{font-family:'Cinzel',serif;color:var(--gold);margin-bottom:14px;font-size:14px;letter-spacing:0.2em;}
+.promo-choices{display:flex;gap:10px;justify-content:center;}
+.promo-btn{font-size:36px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  width:58px;height:58px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s;}
+.promo-btn:hover{border-color:var(--gold);background:rgba(201,168,76,0.1);transform:scale(1.08);}
+
+/* Stats panel */
+.stats-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:16px 20px;margin-bottom:14px;display:none;}
+.stats-card.visible{display:block;}
+.stats-card h2{font-family:'Cinzel',serif;font-size:12px;font-weight:600;color:var(--gold);
+  letter-spacing:0.2em;margin-bottom:12px;text-transform:uppercase;}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.stat-box{text-align:center;background:var(--surface2);border-radius:8px;padding:10px 6px;}
+.stat-num{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--gold);}
+.stat-label{font-size:10px;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;margin-top:2px;}
+</style>
+</head>
+<body>
+
+<div class="reveal-flash" id="reveal-flash">
+  <div class="reveal-flash-title">♛ Shadow Queen Revealed!</div>
+  <div class="reveal-flash-body" id="reveal-flash-body"></div>
+</div>
+
+<h1>Shadow Queen Chess</h1>
+<p class="subtitle">Real-time · Two Player · Persistent</p>
+
+<!-- USER BAR -->
+<div id="user-bar">
+  <div class="user-info">
+    <div id="user-avatar-wrap"></div>
+    <div>
+      <div class="user-name" id="user-display-name">—</div>
+      <div class="user-email" id="user-email-display"></div>
+    </div>
+  </div>
+  <div class="user-actions">
+    <span class="user-stats" id="user-stats-label"></span>
+    <button class="btn-signout" id="btn-signout">Sign Out</button>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <h2>Sign In to Play</h2>
+
+    <!-- Google Sign-In -->
+    <button class="btn-google" id="btn-google-signin">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div class="login-divider"><span>or use email</span></div>
+
+    <!-- Email/Password -->
+    <input type="email" id="login-email" placeholder="Email address" style="margin-bottom:8px;width:100%;display:block;">
+    <input type="password" id="login-password" placeholder="Password" style="margin-bottom:10px;width:100%;display:block;">
+    <button class="btn" id="btn-email-signin" style="margin-bottom:6px;">Sign In</button>
+    <button class="btn secondary" id="btn-email-signup">Create Account</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-footer">
+      <a id="btn-play-guest">Continue as guest (no account)</a>
+    </div>
+  </div>
+</div>
+
+<!-- STATS CARD (shown when logged in, above lobby) -->
+<div class="stats-card" id="stats-card">
+  <h2>Your Record</h2>
+  <div class="stats-grid">
+    <div class="stat-box"><div class="stat-num" id="stat-played">0</div><div class="stat-label">Played</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-wins">0</div><div class="stat-label">Wins</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-winpct">—</div><div class="stat-label">Win %</div></div>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div id="lobby">
+  <div class="lobby-card">
+    <h2>Create a Game</h2>
+    <div class="time-row">
+      <label>Time Per Move</label>
+      <select id="time-select">
+        <option value="3600">1 Hour</option>
+        <option value="21600">6 Hours</option>
+        <option value="86400" selected>1 Day</option>
+        <option value="259200">3 Days</option>
+        <option value="604800">1 Week</option>
+        <option value="custom">Custom…</option>
+      </select>
+    </div>
+    <div id="custom-time-row" style="display:none;margin-bottom:10px;">
+      <input type="text" id="custom-minutes" placeholder="Minutes per move (e.g. 30)">
+    </div>
+    <button class="btn" id="btn-create">Create Room as White</button>
+    <div class="share-box" id="share-box">
+      <div class="share-label">▸ Send this to your opponent (Black)</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+        <button class="btn" id="copy-btn" style="width:auto;padding:8px 16px;margin:0;font-size:11px;">Copy Opponent Link</button>
+      </div>
+      <div id="share-url" style="font-size:11px;margin-top:2px;opacity:0.7;word-break:break-all;"></div>
+      <p style="font-size:12px;color:var(--text-dim);margin-top:8px;font-family:'Crimson Pro',serif;">Send this to your opponent. Your own rejoin link will appear when you leave the game.</p>
+    </div>
+    <div id="lobby-msg"></div>
+  </div>
+  <div class="lobby-card">
+    <h2>Join a Game</h2>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px;font-family:'Crimson Pro',serif;">Received an invite link? Paste it below to join as Black.</p>
+    <div class="input-row">
+      <input type="text" id="join-code" placeholder="Paste invite link here…">
+      <button class="btn" id="btn-join" style="width:auto;padding:0 18px;margin:0">Join</button>
+    </div>
+  </div>
+  <div class="lobby-card spectator-card">
+    <h2>👁 Watch a Game</h2>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px;font-family:'Crimson Pro',serif;">Spectators see <span style="color:var(--shadow-light)">both Shadow Queens</span>. Use the same room link.</p>
+    <div class="input-row">
+      <input type="text" id="spectate-code" placeholder="Paste invite link here…">
+      <button class="btn purple" id="btn-spectate" style="width:auto;padding:0 18px;margin:0">Watch</button>
+    </div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game">
+  <div class="game-header">
+    <div class="player-badge" id="my-badge">—</div>
+    <div id="turn-display">—</div>
+    <div id="network-status"><span class="conn-dot" id="conn-dot"></span><span id="conn-label">—</span></div>
+  </div>
+  <div class="timer-bar" id="timer-bar" style="display:none">
+    <div class="timer-box" id="timer-white">
+      <div class="timer-label">♔ White</div>
+      <div class="timer-value" id="timer-white-val">—</div>
+    </div>
+    <div class="timer-box" id="timer-black">
+      <div class="timer-label">♚ Black</div>
+      <div class="timer-value" id="timer-black-val">—</div>
+    </div>
+  </div>
+  <div id="status-display"></div>
+  <div id="sq-phase-banner"></div>
+  <div class="captures-bar" id="captures-black">
+    <span class="captures-label">♚</span>
+    <span class="captures-pieces" id="captures-black-pieces"></span>
+    <span class="captures-score" id="captures-black-score"></span>
+  </div>
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+    <div class="waiting-overlay" id="waiting-overlay"><p>Awaiting opponent…</p></div>
+  </div>
+  <div class="captures-bar" id="captures-white">
+    <span class="captures-label">♔</span>
+    <span class="captures-pieces" id="captures-white-pieces"></span>
+    <span class="captures-score" id="captures-white-score"></span>
+  </div>
+  <div class="review-bar" id="review-bar">
+    <button class="review-btn" id="btn-review-first">⏮</button>
+    <button class="review-btn" id="btn-review-prev">◀</button>
+    <span class="review-counter" id="review-counter">1 / 1</span>
+    <button class="review-btn" id="btn-review-next">▶</button>
+    <button class="review-btn" id="btn-review-last">⏭</button>
+    <span class="review-live" id="review-live-label" style="display:none">● Live</span>
+  </div>
+  <div class="confirm-bar" id="confirm-bar">
+    <div class="confirm-msg" id="confirm-msg">Move to confirm</div>
+    <div class="confirm-btns">
+      <button class="btn-confirm cancel" id="btn-cancel-move">✗ Cancel</button>
+      <button class="btn-confirm accept" id="btn-accept-move">✓ Confirm</button>
+    </div>
+  </div>
+  <div class="game-controls">
+    <button class="btn purple ctrl-activate" id="btn-activate" disabled>⬡ Activate Shadow Queen</button>
+    <button class="btn secondary" id="btn-leave" style="flex:1;margin:0;display:none;">✕ Leave Game</button>
+  </div>
+  <div id="spectator-panel">
+    <h3>Spectator — Both Shadow Queens Visible</h3>
+    <div class="spec-row">
+      <span class="spec-piece">♔</span><span class="spec-label">White Shadow Queen</span><span class="spec-val" id="spec-white">Not activated</span>
+    </div>
+    <div class="spec-row">
+      <span class="spec-piece">♚</span><span class="spec-label">Black Shadow Queen</span><span class="spec-val" id="spec-black">Not activated</span>
+    </div>
+  </div>
+  <div id="move-log-wrap"><h3>Move Log</h3><div id="move-log"></div></div>
+  <div class="notif-bar" id="notif-bar">🔔 Notifications enabled — you'll be alerted when it's your turn</div>
+</div>
+
+<div class="promo-modal" id="promo-modal">
+  <div class="promo-inner">
+    <h2>Pawn Promotion</h2>
+    <div class="promo-choices" id="promo-choices"></div>
+  </div>
+</div>
+
+<div class="promo-modal" id="leave-modal">
+  <div class="promo-inner" style="max-width:360px;text-align:left;">
+    <h2 style="text-align:center;margin-bottom:6px;">♔ Leaving the game?</h2>
+    <p style="font-size:13px;color:var(--text-dim);font-family:'Crimson Pro',serif;margin-bottom:14px;text-align:center;line-height:1.6;">Your game is saved. Copy your personal link to come back as White anytime.</p>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+      <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.2em;color:var(--gold);text-transform:uppercase;margin-bottom:6px;">Your White Rejoin Link</div>
+      <div id="leave-white-url" style="font-size:11px;color:var(--text-dim);word-break:break-all;margin-bottom:8px;"></div>
+      <button class="btn" id="leave-copy-btn" style="margin:0;padding:10px;">Copy My Link</button>
+    </div>
+    <button class="btn secondary" id="leave-close-btn" style="margin:0;text-align:center;">Close & Leave</button>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, get, onValue, off, update, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getFirestore, doc, setDoc, getDoc, updateDoc, increment }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  updateProfile
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+// ══════════════════════════════════════════════
+// FIREBASE INIT
+// ══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyCjpTGMlTyK5dN09pwjDmTpgRrJ1jGWP1I",
+  authDomain: "shadow-queen-chess.firebaseapp.com",
+  databaseURL: "https://shadow-queen-chess-default-rtdb.firebaseio.com",
+  projectId: "shadow-queen-chess",
+  storageBucket: "shadow-queen-chess.firebasestorage.app",
+  messagingSenderId: "251174443158",
+  appId: "1:251174443158:web:88668caa039eaeb73f0ab7",
+  measurementId: "G-SDSFN7W1PR"
+};
+
+let db = null, fsdb = null, auth = null, gameRef = null, gameUnsubscribe = null;
+let currentUser = null; // logged-in Firebase user (null = guest)
+const googleProvider = new GoogleAuthProvider();
+
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getDatabase(app);
+  fsdb = getFirestore(app);
+  auth = getAuth(app);
+
+  // Auto-fill room code from URL
+  const _p = new URLSearchParams(window.location.search), _r = _p.get('room');
+  if (_r) {
+    document.getElementById('join-code').value = _r;
+    document.getElementById('spectate-code').value = _r;
+  }
+} catch(e) {
+  console.error('Firebase init error:', e);
+}
+
+// ══════════════════════════════════════════════
+// AUTH STATE — runs whenever login status changes
+// ══════════════════════════════════════════════
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  if (user) {
+    // Logged in — show user bar, hide login screen, show lobby
+    showUserBar(user);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('lobby').style.display = 'block';
+    // Save/update their profile in Firestore
+    await saveUserProfile(user);
+    // Load and show their stats
+    await loadUserStats(user);
+    // Auto-rejoin if returning to a game
+    handleAutoRejoin();
+  } else {
+    // Not logged in — show login screen
+    hideUserBar();
+    document.getElementById('login-screen').style.display = 'block';
+    document.getElementById('lobby').style.display = 'none';
+    document.getElementById('stats-card').classList.remove('visible');
+  }
+});
+
+// ══════════════════════════════════════════════
+// USER PROFILE — Firestore
+// ══════════════════════════════════════════════
+async function saveUserProfile(user) {
+  if (!fsdb || !user) return;
+  try {
+    const userRef = doc(fsdb, 'users', user.uid);
+    const existing = await getDoc(userRef);
+    if (!existing.exists()) {
+      // First time — create profile
+      await setDoc(userRef, {
+        name: user.displayName || user.email || 'Player',
+        email: user.email || '',
+        photoURL: user.photoURL || '',
+        joinedAt: new Date().toISOString(),
+        gamesPlayed: 0,
+        wins: 0,
+        lastSeen: new Date().toISOString()
+      });
+    } else {
+      // Update last seen
+      await updateDoc(userRef, { lastSeen: new Date().toISOString() });
+    }
+  } catch(e) { console.error('Profile save error:', e); }
+}
+
+async function loadUserStats(user) {
+  if (!fsdb || !user) return;
+  try {
+    const userRef = doc(fsdb, 'users', user.uid);
+    const snap = await getDoc(userRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      const played = data.gamesPlayed || 0;
+      const wins = data.wins || 0;
+      const pct = played > 0 ? Math.round((wins / played) * 100) + '%' : '—';
+      document.getElementById('stat-played').textContent = played;
+      document.getElementById('stat-wins').textContent = wins;
+      document.getElementById('stat-winpct').textContent = pct;
+      document.getElementById('stats-card').classList.add('visible');
+      // Mini stats in user bar
+      document.getElementById('user-stats-label').textContent =
+        played > 0 ? `${wins}W / ${played - wins}L` : 'No games yet';
+    }
+  } catch(e) { console.error('Stats load error:', e); }
+}
+
+async function recordGameResult(won) {
+  if (!fsdb || !currentUser) return;
+  try {
+    const userRef = doc(fsdb, 'users', currentUser.uid);
+    await updateDoc(userRef, {
+      gamesPlayed: increment(1),
+      wins: won ? increment(1) : increment(0)
+    });
+    await loadUserStats(currentUser); // refresh display
+  } catch(e) { console.error('Game result save error:', e); }
+}
+
+// ══════════════════════════════════════════════
+// USER BAR UI
+// ══════════════════════════════════════════════
+function showUserBar(user) {
+  const bar = document.getElementById('user-bar');
+  bar.classList.add('visible');
+  document.getElementById('user-display-name').textContent =
+    user.displayName || user.email || 'Player';
+  document.getElementById('user-email-display').textContent = user.email || '';
+  const wrap = document.getElementById('user-avatar-wrap');
+  wrap.innerHTML = '';
+  if (user.photoURL) {
+    const img = document.createElement('img');
+    img.src = user.photoURL;
+    img.className = 'user-avatar';
+    img.alt = 'Avatar';
+    wrap.appendChild(img);
+  } else {
+    const ph = document.createElement('div');
+    ph.className = 'user-avatar-placeholder';
+    ph.textContent = (user.displayName || user.email || '?')[0].toUpperCase();
+    wrap.appendChild(ph);
+  }
+}
+
+function hideUserBar() {
+  document.getElementById('user-bar').classList.remove('visible');
+}
+
+// ══════════════════════════════════════════════
+// LOGIN ACTIONS
+// ══════════════════════════════════════════════
+function setLoginError(msg) {
+  document.getElementById('login-error').textContent = msg;
+}
+
+document.getElementById('btn-google-signin').addEventListener('click', async () => {
+  setLoginError('');
+  try {
+    await signInWithPopup(auth, googleProvider);
+    // onAuthStateChanged handles the rest
+  } catch(e) {
+    setLoginError(friendlyAuthError(e.code));
+  }
+});
+
+document.getElementById('btn-email-signin').addEventListener('click', async () => {
+  setLoginError('');
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { setLoginError('Please enter email and password.'); return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch(e) {
+    setLoginError(friendlyAuthError(e.code));
+  }
+});
+
+document.getElementById('btn-email-signup').addEventListener('click', async () => {
+  setLoginError('');
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { setLoginError('Please enter email and password.'); return; }
+  if (password.length < 6) { setLoginError('Password must be at least 6 characters.'); return; }
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    // Set display name from email prefix
+    await updateProfile(result.user, { displayName: email.split('@')[0] });
+  } catch(e) {
+    setLoginError(friendlyAuthError(e.code));
+  }
+});
+
+document.getElementById('btn-play-guest').addEventListener('click', () => {
+  // Skip login — go straight to lobby as guest
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('lobby').style.display = 'block';
+  handleAutoRejoin();
+});
+
+document.getElementById('btn-signout').addEventListener('click', async () => {
+  await signOut(auth);
+  // onAuthStateChanged will hide user bar and show login
+});
+
+function friendlyAuthError(code) {
+  const map = {
+    'auth/user-not-found': 'No account found with that email.',
+    'auth/wrong-password': 'Incorrect password.',
+    'auth/email-already-in-use': 'An account with that email already exists.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/weak-password': 'Password must be at least 6 characters.',
+    'auth/popup-closed-by-user': 'Sign-in cancelled.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+    'auth/too-many-requests': 'Too many attempts. Please wait a moment.'
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+}
+
+// ══════════════════════════════════════════════
+// PIECE DEFINITIONS
+// ══════════════════════════════════════════════
+const PIECES={white:{king:'♔',queen:'♕',rook:'♖',bishop:'♗',knight:'♘',pawn:'♙'},black:{king:'♚',queen:'♛',rook:'♜',bishop:'♝',knight:'♞',pawn:'♟'}};
+const TYPE_MAP={k:'king',q:'queen',r:'rook',b:'bishop',n:'knight',p:'pawn'};
+function pieceChar(code){if(!code)return'';return PIECES[code[0]==='w'?'white':'black'][TYPE_MAP[code[1]]];}
+
+// ══════════════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════════════
+let G = initGameState();
+function initGameState(){
+  return{board:[['br','bn','bb','bq','bk','bb','bn','br'],['bp','bp','bp','bp','bp','bp','bp','bp'],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],['wp','wp','wp','wp','wp','wp','wp','wp'],['wr','wn','wb','wq','wk','wb','wn','wr']],
+    currentTurn:'white',shadowQueens:{white:null,black:null},sqChosen:{white:false,black:false},
+    gameOver:false,moveLog:[],enPassant:null,castlingRights:{white:{kside:true,qside:true},black:{kside:true,qside:true}},
+    timeLimitSecs:86400,timeRemaining:{white:86400,black:86400},lastMoveAt:null,lastMove:null,
+    inCheck:{white:false,black:false},sqOrigType:{white:null,black:null}};
+}
+
+// ══════════════════════════════════════════════
+// UI / NETWORK STATE
+// ══════════════════════════════════════════════
+let myRole=null, roomId=null;
+let selectedSq=null, pendingPromotion=null, waitingForOpponent=true;
+let blackReadyMsg=false, pendingMoveConfirm=null;
+let boardHistory=[], reviewIndex=-1;
+let timerInterval=null, notifGranted=false;
+const originalTitle=document.title;
+let flashInterval=null, revealFlashTimer=null;
+let isWriting=false;
+
+// ══════════════════════════════════════════════
+// CHESS LOGIC (unchanged from V1)
+// ══════════════════════════════════════════════
+function findKing(board,color){const code=color[0]+'k';for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(board[r][c]===code)return{row:r,col:c};return null;}
+function isPathClear(board,fr,fc,tr,tc){const rd=tr>fr?1:tr<fr?-1:0,cd=tc>fc?1:tc<fc?-1:0;let r=fr+rd,c=fc+cd;while(r!==tr||c!==tc){if(board[r][c]!==null)return false;r+=rd;c+=cd;}return true;}
+function pawnAttacks(fr,fc,tr,tc,color){return tr===fr+(color==='white'?-1:1)&&Math.abs(tc-fc)===1;}
+function rookRange(board,fr,fc,tr,tc){if(fr!==tr&&fc!==tc)return false;return isPathClear(board,fr,fc,tr,tc);}
+function bishopRange(board,fr,fc,tr,tc){if(Math.abs(fr-tr)!==Math.abs(fc-tc))return false;return isPathClear(board,fr,fc,tr,tc);}
+function queenRange(board,fr,fc,tr,tc){return rookRange(board,fr,fc,tr,tc)||bishopRange(board,fr,fc,tr,tc);}
+function knightRange(fr,fc,tr,tc){const rd=Math.abs(fr-tr),cd=Math.abs(fc-tc);return(rd===2&&cd===1)||(rd===1&&cd===2);}
+function kingRange(fr,fc,tr,tc){return Math.abs(fr-tr)<=1&&Math.abs(fc-tc)<=1;}
+function canAttack(board,sq,fr,fc,tr,tc,piece){
+  if(!piece)return false;
+  const color=piece[0]==='w'?'white':'black',t=piece[1],sqd=sq[color],isSQ=sqd&&sqd.row===fr&&sqd.col===fc;
+  const qr=()=>queenRange(board,fr,fc,tr,tc);
+  const orig=()=>{switch(t){case'p':return pawnAttacks(fr,fc,tr,tc,color);case'r':return rookRange(board,fr,fc,tr,tc);case'b':return bishopRange(board,fr,fc,tr,tc);case'n':return knightRange(fr,fc,tr,tc);case'k':return kingRange(fr,fc,tr,tc);case'q':return qr();}};
+  if(t==='q')return qr();if(isSQ&&sqd.revealed)return qr();if(isSQ&&!sqd.revealed)return orig()||qr();return orig();
+}
+function isUnderAttack(board,sq,row,col,byColor){for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=board[r][c];if(!p||p[0]!==byColor[0])continue;if(canAttack(board,sq,r,c,row,col,p))return true;}return false;}
+function isInCheck(board,sq,color){const kp=findKing(board,color);if(!kp)return false;return isUnderAttack(board,sq,kp.row,kp.col,color==='white'?'black':'white');}
+function pawnPseudo(board,ep,fr,fc,tr,tc,color){const d=color==='white'?-1:1,sr=color==='white'?6:1;if(fc===tc&&tr===fr+d&&!board[tr][tc])return true;if(fc===tc&&fr===sr&&tr===fr+2*d&&!board[tr][tc]&&!board[fr+d][tc])return true;if(Math.abs(tc-fc)===1&&tr===fr+d){if(board[tr][tc])return true;if(ep&&ep.row===tr&&ep.col===tc)return true;}return false;}
+function pseudoLegal(board,sq,ep,fr,fc,tr,tc){
+  const piece=board[fr][fc];if(!piece)return false;
+  const color=piece[0]==='w'?'white':'black',t=piece[1],target=board[tr][tc];
+  if(target&&target[0]===piece[0])return false;if(target&&target[1]==='k')return false;
+  const sqd=sq[color],isSQ=sqd&&sqd.row===fr&&sqd.col===fc;
+  const orig=()=>{switch(t){case'p':return pawnPseudo(board,ep,fr,fc,tr,tc,color);case'r':return rookRange(board,fr,fc,tr,tc);case'b':return bishopRange(board,fr,fc,tr,tc);case'n':return knightRange(fr,fc,tr,tc);case'k':return kingRange(fr,fc,tr,tc);case'q':return queenRange(board,fr,fc,tr,tc);}};
+  if(t==='q')return queenRange(board,fr,fc,tr,tc);if(isSQ&&sqd.revealed)return queenRange(board,fr,fc,tr,tc);if(isSQ&&!sqd.revealed)return orig()||queenRange(board,fr,fc,tr,tc);return orig();
+}
+function isLegal(gs,fr,fc,tr,tc){
+  const{board,shadowQueens:sq,enPassant:ep,castlingRights:cr}=gs;
+  const piece=board[fr][fc];if(!piece)return false;
+  const color=piece[0]==='w'?'white':'black',opp=color==='white'?'black':'white',t=piece[1];
+  if(t==='k'&&Math.abs(tc-fc)===2){const hr=color==='white'?7:0;if(fr!==hr||fc!==4)return false;return legalCastle(gs,color,fr,fc,tr,tc);}
+  if(!pseudoLegal(board,sq,ep,fr,fc,tr,tc))return false;
+  const nb=board.map(r=>[...r]);
+  const nsq={white:sq.white?{...sq.white}:null,black:sq.black?{...sq.black}:null};
+  nb[tr][tc]=nb[fr][fc];nb[fr][fc]=null;
+  if(t==='p'&&fc!==tc&&!board[tr][tc]&&ep&&ep.row===tr&&ep.col===tc){nb[fr][tc]=null;if(nsq[opp]&&nsq[opp].row===fr&&nsq[opp].col===tc)nsq[opp]=null;}
+  if(board[tr][tc]&&nsq[opp]&&nsq[opp].row===tr&&nsq[opp].col===tc)nsq[opp]=null;
+  if(nsq[color]&&nsq[color].row===fr&&nsq[color].col===fc)nsq[color]={...nsq[color],row:tr,col:tc};
+  return!isInCheck(nb,nsq,color);
+}
+function legalCastle(gs,color,fr,fc,tr,tc){
+  const{board,shadowQueens:sq,castlingRights:cr}=gs;
+  if(isInCheck(board,sq,color))return false;
+  const hr=color==='white'?7:0;if(fr!==hr||fc!==4)return false;
+  const rights=cr[color];
+  const sqd=sq[color];
+  const sqIsKsideRook=sqd&&!sqd.revealed&&sqd.row===hr&&sqd.col===7;
+  const sqIsQsideRook=sqd&&!sqd.revealed&&sqd.row===hr&&sqd.col===0;
+  if(tc===6){
+    if(!rights.kside||board[hr][5]||board[hr][6])return false;
+    if(!board[hr][7]||board[hr][7]!==color[0]+'r')return false;
+    const nb1=board.map(r=>[...r]);nb1[hr][5]=nb1[hr][7];nb1[hr][7]=null;nb1[hr][5]=nb1[hr][4];nb1[hr][4]=null;
+    const sq1=sqIsKsideRook?{...sq,[color]:{...sqd,col:5}}:sq;
+    if(isInCheck(nb1,sq1,color))return false;
+    const nb2=board.map(r=>[...r]);nb2[hr][5]=nb2[hr][7];nb2[hr][7]=null;nb2[hr][6]=nb2[hr][4];nb2[hr][4]=null;
+    const sq2=sqIsKsideRook?{...sq,[color]:{...sqd,col:5}}:sq;
+    return!isInCheck(nb2,sq2,color);
+  }
+  if(tc===2){
+    if(!rights.qside||board[hr][1]||board[hr][2]||board[hr][3])return false;
+    if(!board[hr][0]||board[hr][0]!==color[0]+'r')return false;
+    const nb1=board.map(r=>[...r]);nb1[hr][3]=nb1[hr][0];nb1[hr][0]=null;nb1[hr][3]=nb1[hr][4];nb1[hr][4]=null;
+    const sq1=sqIsQsideRook?{...sq,[color]:{...sqd,col:3}}:sq;
+    if(isInCheck(nb1,sq1,color))return false;
+    const nb2=board.map(r=>[...r]);nb2[hr][3]=nb2[hr][0];nb2[hr][0]=null;nb2[hr][2]=nb2[hr][4];nb2[hr][4]=null;
+    const sq2=sqIsQsideRook?{...sq,[color]:{...sqd,col:3}}:sq;
+    return!isInCheck(nb2,sq2,color);
+  }
+  return false;
+}
+function hasAnyLegal(gs,color){
+  const{board}=gs;
+  for(let fr=0;fr<8;fr++)for(let fc=0;fc<8;fc++){const p=board[fr][fc];if(!p||p[0]!==color[0])continue;for(let tr=0;tr<8;tr++)for(let tc=0;tc<8;tc++){if(fr===tr&&fc===tc)continue;if(isLegal(gs,fr,fc,tr,tc))return true;}if(p[1]==='k'){const hr=color==='white'?7:0;if(isLegal(gs,fr,fc,hr,6)||isLegal(gs,fr,fc,hr,2))return true;}}return false;
+}
+function isCheckmate(gs){const inChk=(gs.inCheck&&gs.inCheck[gs.currentTurn])||isInCheck(gs.board,gs.shadowQueens,gs.currentTurn);if(!inChk)return false;return!hasAnyLegal(gs,gs.currentTurn);}
+function isStalemate(gs){const inChk=(gs.inCheck&&gs.inCheck[gs.currentTurn])||isInCheck(gs.board,gs.shadowQueens,gs.currentTurn);if(inChk)return false;return!hasAnyLegal(gs,gs.currentTurn);}
+function getLegalMoves(gs,fr,fc){const moves=[];const seen=new Set();const addMove=(tr,tc)=>{const key=tr*8+tc;if(seen.has(key))return;seen.add(key);moves.push({row:tr,col:tc});};for(let tr=0;tr<8;tr++)for(let tc=0;tc<8;tc++){if(fr===tr&&fc===tc)continue;if(isLegal(gs,fr,fc,tr,tc))addMove(tr,tc);}const p=gs.board[fr][fc];if(p&&p[1]==='k'){const hr=p[0]==='w'?7:0;if(!seen.has(hr*8+6)&&isLegal(gs,fr,fc,hr,6))addMove(hr,6);if(!seen.has(hr*8+2)&&isLegal(gs,fr,fc,hr,2))addMove(hr,2);}return moves;}
+function applyMove(gs,fr,fc,tr,tc,promoChoice){
+  const{board,shadowQueens:sq,castlingRights:cr,enPassant:ep}=gs;
+  const nb=board.map(r=>[...r]);
+  const nsq={white:sq.white?{...sq.white}:null,black:sq.black?{...sq.black}:null};
+  const ncr={white:{...cr.white},black:{...cr.black}};
+  const piece=nb[fr][fc],color=piece[0]==='w'?'white':'black',opp=color==='white'?'black':'white',t=piece[1];
+  let newEP=null;
+  if(t==='k'&&Math.abs(tc-fc)===2){
+    const hr=color==='white'?7:0;
+    if(fr!==hr||fc!==4){nb[tr][tc]=nb[fr][fc];nb[fr][fc]=null;ncr[color]={kside:false,qside:false};}
+    else{nb[tr][tc]=nb[fr][fc];nb[fr][fc]=null;
+      if(tc===6&&nb[hr][7]===color[0]+'r'){nb[hr][5]=nb[hr][7];nb[hr][7]=null;if(nsq[color]&&nsq[color].row===hr&&nsq[color].col===7)nsq[color]={...nsq[color],col:5};}
+      if(tc===2&&nb[hr][0]===color[0]+'r'){nb[hr][3]=nb[hr][0];nb[hr][0]=null;if(nsq[color]&&nsq[color].row===hr&&nsq[color].col===0)nsq[color]={...nsq[color],col:3};}
+      ncr[color]={kside:false,qside:false};}
+  }else{
+    if(t==='p'&&fc!==tc&&!nb[tr][tc]&&ep&&ep.row===tr&&ep.col===tc){nb[fr][tc]=null;if(nsq[opp]&&nsq[opp].row===fr&&nsq[opp].col===tc)nsq[opp]=null;}
+    if(t==='p'&&Math.abs(tr-fr)===2)newEP={row:(fr+tr)/2,col:fc};
+    if(nb[tr][tc]&&nsq[opp]&&nsq[opp].row===tr&&nsq[opp].col===tc)nsq[opp]=null;
+    nb[tr][tc]=nb[fr][fc];nb[fr][fc]=null;
+    const sqWasMoved=nsq[color]&&nsq[color].row===fr&&nsq[color].col===fc;
+    if(sqWasMoved)nsq[color]={...nsq[color],row:tr,col:tc};
+    if(sqWasMoved&&nsq[color]&&!nsq[color].revealed){
+      const origOk=(()=>{switch(t){case'p':return pawnPseudo(board,ep,fr,fc,tr,tc,color);case'r':return rookRange(board,fr,fc,tr,tc);case'b':return bishopRange(board,fr,fc,tr,tc);case'n':return knightRange(fr,fc,tr,tc);case'k':return kingRange(fr,fc,tr,tc);default:return false;}})();
+      if(!origOk){nb[tr][tc]=color[0]+'q';nsq[color]=null;}
+      else{const oppKingPos=findKing(nb,opp);if(oppKingPos){const origAttacks=(()=>{switch(t){case'p':return pawnAttacks(tr,tc,oppKingPos.row,oppKingPos.col,color);case'r':return rookRange(nb,tr,tc,oppKingPos.row,oppKingPos.col);case'b':return bishopRange(nb,tr,tc,oppKingPos.row,oppKingPos.col);case'n':return knightRange(tr,tc,oppKingPos.row,oppKingPos.col);case'k':return kingRange(tr,tc,oppKingPos.row,oppKingPos.col);default:return false;}})();const sqGivesQueenCheck=queenRange(nb,tr,tc,oppKingPos.row,oppKingPos.col);if(sqGivesQueenCheck&&!origAttacks){nb[tr][tc]=color[0]+'q';nsq[color]=null;}}}
+    }
+    if(t==='p'&&(tr===0||tr===7)){const isSQ=nsq[color]&&nsq[color].row===tr&&nsq[color].col===tc;if(isSQ){nb[tr][tc]=color[0]+'q';nsq[color]=null;}else{nb[tr][tc]=color[0]+(promoChoice||'q');}}
+    if(t==='k')ncr[color]={kside:false,qside:false};
+    if(t==='r'){const hr=color==='white'?7:0;if(fr===hr&&fc===0)ncr[color].qside=false;if(fr===hr&&fc===7)ncr[color].kside=false;}
+  }
+  const now=Date.now();
+  const ntr={...gs.timeRemaining};
+  if(gs.lastMoveAt&&bothChosen(gs)){const elapsed=Math.floor((now-gs.lastMoveAt)/1000);ntr[color]=Math.max(0,ntr[color]-elapsed);}
+  if(nsq[opp]&&!nsq[opp].revealed){
+    const movingKing=findKing(nb,color);const oppSqPiece=nb[nsq[opp].row]&&nb[nsq[opp].row][nsq[opp].col];
+    if(movingKing&&oppSqPiece){const oppSqT=oppSqPiece[1];
+      const origAttacksMovingKing=(()=>{switch(oppSqT){case'p':return pawnAttacks(nsq[opp].row,nsq[opp].col,movingKing.row,movingKing.col,opp);case'r':return rookRange(nb,nsq[opp].row,nsq[opp].col,movingKing.row,movingKing.col);case'b':return bishopRange(nb,nsq[opp].row,nsq[opp].col,movingKing.row,movingKing.col);case'n':return knightRange(nsq[opp].row,nsq[opp].col,movingKing.row,movingKing.col);case'k':return kingRange(nsq[opp].row,nsq[opp].col,movingKing.row,movingKing.col);default:return false;}})();
+      const sqQueenCheck=queenRange(nb,nsq[opp].row,nsq[opp].col,movingKing.row,movingKing.col);
+      if(sqQueenCheck&&!origAttacksMovingKing){nb[nsq[opp].row][nsq[opp].col]=opp[0]+'q';nsq[opp]=null;}
+    }
+  }
+  const newInCheck={white:isInCheck(nb,nsq,'white'),black:isInCheck(nb,nsq,'black')};
+  const revealedThisMove=[];
+  if(sq[color]&&!sq[color].revealed&&!nsq[color])revealedThisMove.push(color);
+  if(sq[opp]&&!sq[opp].revealed&&!nsq[opp])revealedThisMove.push(opp);
+  return{board:nb,currentTurn:opp,shadowQueens:nsq,sqChosen:{...gs.sqChosen},
+    gameOver:false,moveLog:[...gs.moveLog,buildNotation(board,fr,fc,tr,tc,piece)],
+    enPassant:newEP,castlingRights:ncr,timeLimitSecs:gs.timeLimitSecs,
+    timeRemaining:ntr,lastMoveAt:now,inCheck:newInCheck,lastMove:{fr,fc,tr,tc},revealedThisMove};
+}
+function buildNotation(board,fr,fc,tr,tc,piece){
+  const t=piece[1].toUpperCase(),cap=board[tr][tc]?'×':'',F='abcdefgh',R='87654321';
+  return(t==='P'?'':t)+F[fc]+R[fr]+cap+F[tc]+R[tr];
+}
+function bothChosen(gs){return gs.sqChosen.white&&gs.sqChosen.black;}
+function activateShadowQueen(gs,row,col){
+  const piece=gs.board[row][col];if(!piece)return null;
+  const color=piece[0]==='w'?'white':'black',t=piece[1];
+  if(t==='k'||t==='q'||gs.shadowQueens[color])return null;
+  const newOrigType={...(gs.sqOrigType||{white:null,black:null}),[color]:t};
+  return{...gs,shadowQueens:{...gs.shadowQueens,[color]:{row,col,revealed:false}},sqChosen:{...gs.sqChosen,[color]:true},sqOrigType:newOrigType};
+}
+
+// ══════════════════════════════════════════════
+// FIREBASE DATA HELPERS (unchanged)
+// ══════════════════════════════════════════════
+function serializeBoard(board){return board.map(row=>row.map(sq=>sq===null?'_':sq).join(','));}
+function deserializeBoard(flat){return flat.map(row=>row.split(',').map(sq=>sq==='_'?null:sq));}
+function serializeGameState(gs){
+  return{board:serializeBoard(gs.board),currentTurn:gs.currentTurn,sqChosen:gs.sqChosen,
+    gameOver:gs.gameOver,moveLog:gs.moveLog.length>0?gs.moveLog:[''],
+    enPassant:gs.enPassant||'none',castlingRights:gs.castlingRights,
+    timeLimitSecs:gs.timeLimitSecs,timeRemaining:gs.timeRemaining,
+    lastMoveAt:gs.lastMoveAt||0,lastMove:gs.lastMove||'none',
+    inCheck:gs.inCheck||{white:false,black:false},
+    sqOrigType:gs.sqOrigType||{white:'none',black:'none'},
+    shadowQueens:{white:gs.shadowQueens.white||'none',black:gs.shadowQueens.black||'none'}};
+}
+function deserializeGameState(data){
+  const gs={};
+  gs.board=deserializeBoard(data.board);gs.currentTurn=data.currentTurn;gs.sqChosen=data.sqChosen;
+  gs.gameOver=data.gameOver;gs.moveLog=data.moveLog?data.moveLog.filter(m=>m!==''):[];
+  gs.enPassant=data.enPassant==='none'?null:data.enPassant;gs.castlingRights=data.castlingRights;
+  gs.timeLimitSecs=data.timeLimitSecs;gs.timeRemaining=data.timeRemaining;
+  gs.lastMoveAt=data.lastMoveAt||null;gs.lastMove=data.lastMove==='none'?null:data.lastMove;
+  gs.inCheck=data.inCheck||{white:false,black:false};
+  gs.sqOrigType={white:data.sqOrigType&&data.sqOrigType.white!=='none'?data.sqOrigType.white:null,black:data.sqOrigType&&data.sqOrigType.black!=='none'?data.sqOrigType.black:null};
+  gs.shadowQueens={white:data.shadowQueens.white==='none'?null:data.shadowQueens.white,black:data.shadowQueens.black==='none'?null:data.shadowQueens.black};
+  return gs;
+}
+function sanitizeForRole(gs,role){
+  const nsq={white:null,black:null};
+  if(role===null||role==='spectator'){nsq.white=gs.shadowQueens.white;nsq.black=gs.shadowQueens.black;}
+  else{nsq[role]=gs.shadowQueens[role];const opp=role==='white'?'black':'white';if(gs.shadowQueens[opp]&&gs.shadowQueens[opp].revealed)nsq[opp]=gs.shadowQueens[opp];}
+  return{...gs,shadowQueens:nsq};
+}
+async function writeGameState(gs){
+  if(!db||!roomId)return;isWriting=true;
+  try{
+    await set(ref(db,`games/${roomId}/state`),serializeGameState(gs));
+    await set(ref(db,`games/${roomId}/view_black`),serializeGameState(sanitizeForRole(gs,'black')));
+    await set(ref(db,`games/${roomId}/view_spectator`),serializeGameState(sanitizeForRole(gs,null)));
+  }catch(e){console.error('Firebase write error:',e);}
+  setTimeout(()=>{isWriting=false;},200);
+}
+async function writeBlackMove(fr,fc,tr,tc,promo){if(!db||!roomId)return;await set(ref(db,`games/${roomId}/black_action`),{type:'move',fr,fc,tr,tc,promo:promo||'none',ts:Date.now()});}
+async function writeBlackActivate(sqRow,sqCol){if(!db||!roomId)return;await set(ref(db,`games/${roomId}/black_action`),{type:'activate',sqRow,sqCol,ts:Date.now()});}
+
+// ══════════════════════════════════════════════
+// TIMER (unchanged)
+// ══════════════════════════════════════════════
+function startTimerTick(){
+  if(timerInterval)clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{
+    if(G.gameOver||!bothChosen(G)||waitingForOpponent)return;
+    const now=Date.now(),elapsed=G.lastMoveAt?Math.floor((now-G.lastMoveAt)/1000):0;
+    const effective={...G.timeRemaining};effective[G.currentTurn]=Math.max(0,G.timeRemaining[G.currentTurn]-elapsed);
+    updateTimerUI(effective,G.currentTurn);
+    if(effective[G.currentTurn]<=0&&myRole===G.currentTurn)declareForfeit(G.currentTurn);
+  },1000);
+}
+function updateTimerUI(tr,activeTurn){
+  const bar=document.getElementById('timer-bar');if(!bar)return;bar.style.display='flex';
+  ['white','black'].forEach(c=>{
+    const box=document.getElementById('timer-'+c),val=document.getElementById('timer-'+c+'-val');
+    if(!box||!val)return;const secs=tr[c];
+    box.classList.toggle('active-timer',c===activeTurn&&!G.gameOver);
+    box.classList.toggle('urgent',c===activeTurn&&secs<3600&&!G.gameOver);
+    val.textContent=formatTime(secs);
+  });
+}
+function formatTime(secs){
+  if(secs>=86400){const d=Math.floor(secs/86400),h=Math.floor((secs%86400)/3600);return d+'d '+(h>0?h+'h':'');}
+  if(secs>=3600){const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60);return h+'h '+(m>0?m+'m':'');}
+  if(secs>=60){const m=Math.floor(secs/60),s=secs%60;return m+'m '+String(s).padStart(2,'0')+'s';}
+  return String(secs)+'s';
+}
+function declareForfeit(loser){
+  if(G.gameOver)return;G={...G,gameOver:true};
+  const winner=loser==='white'?'Black':'White';
+  document.getElementById('status-display').textContent='TIME — '+winner+' wins!';
+  if(myRole==='white')writeGameState(G);
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  // Record loss for forfeiting player if logged in
+  if(currentUser&&myRole===loser)recordGameResult(false);
+}
+
+// ══════════════════════════════════════════════
+// NOTIFICATIONS (unchanged)
+// ══════════════════════════════════════════════
+async function requestNotifPermission(){
+  if(!('Notification' in window))return;
+  try{const result=await Notification.requestPermission();notifGranted=result==='granted';if(notifGranted)document.getElementById('notif-bar').style.display='block';}catch(e){}
+}
+function showRevealFlash(who){
+  const el=document.getElementById('reveal-flash'),body=document.getElementById('reveal-flash-body');
+  if(!el||!body)return;
+  let msg='';
+  if(who.includes('white')&&who.includes('black'))msg='Both Shadow Queens have been revealed!';
+  else if(who.includes(myRole))msg='Your Shadow Queen has been revealed — it now moves as a Queen only.';
+  else msg="Your opponent's Shadow Queen has been revealed!";
+  body.textContent=msg;el.classList.add('visible');
+  if(revealFlashTimer)clearTimeout(revealFlashTimer);
+  revealFlashTimer=setTimeout(()=>el.classList.remove('visible'),4000);
+}
+function stopFlashing(){if(flashInterval){clearInterval(flashInterval);flashInterval=null;document.title=originalTitle;}}
+function notifyMyTurn(){
+  stopFlashing();let flashing=true;
+  flashInterval=setInterval(()=>{document.title=flashing?'♟ YOUR TURN! — Shadow Queen Chess':originalTitle;flashing=!flashing;},1000);
+  window.addEventListener('focus',()=>stopFlashing(),{once:true});
+  if(notifGranted&&document.hidden){try{new Notification('Shadow Queen Chess',{body:"It's your turn to move!",icon:'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>♛</text></svg>'});}catch(e){}}
+}
+
+// ══════════════════════════════════════════════
+// RENDER (unchanged)
+// ══════════════════════════════════════════════
+const F='abcdefgh',R='87654321';
+function sqName(r,c){return F[c]+R[r];}
+const PIECE_VALUES={p:1,n:3,b:3,r:5,q:9,k:0};
+const PIECE_SYMBOLS={white:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕'},black:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛'}};
+function getCaptured(board,sqOrigType){
+  const full={w:{p:8,n:2,b:2,r:2,q:1},b:{p:8,n:2,b:2,r:2,q:1}};
+  const onBoard={w:{p:0,n:0,b:0,r:0,q:0,k:0},b:{p:0,n:0,b:0,r:0,q:0,k:0}};
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=board[r][c];if(p)onBoard[p[0]][p[1]]=(onBoard[p[0]][p[1]]||0)+1;}
+  const orig=sqOrigType||{white:null,black:null};
+  for(const[clr,colorKey]of[['w','white'],['b','black']]){const extraQ=Math.max(0,onBoard[clr].q-full[clr].q);if(extraQ>0){onBoard[clr].q-=extraQ;const origType=orig[colorKey];if(origType&&origType in onBoard[clr])onBoard[clr][origType]+=extraQ;}}
+  const captured={white:[],black:[]};
+  for(const t of['q','r','b','n','p']){const wGone=Math.max(0,(full.w[t]||0)-(onBoard.w[t]||0));const bGone=Math.max(0,(full.b[t]||0)-(onBoard.b[t]||0));for(let i=0;i<wGone;i++)captured.black.push({type:t,color:'white'});for(let i=0;i<bGone;i++)captured.white.push({type:t,color:'black'});}
+  return captured;
+}
+function getMaterialScore(captured){const wScore=captured.white.reduce((s,p)=>s+PIECE_VALUES[p.type],0);const bScore=captured.black.reduce((s,p)=>s+PIECE_VALUES[p.type],0);return{white:wScore,black:bScore,diff:wScore-bScore};}
+function renderCaptures(board){
+  const captured=getCaptured(board,G.sqOrigType);const score=getMaterialScore(captured);
+  ['white','black'].forEach(color=>{
+    const piecesEl=document.getElementById('captures-'+color+'-pieces');const scoreEl=document.getElementById('captures-'+color+'-score');
+    if(!piecesEl||!scoreEl)return;piecesEl.innerHTML='';
+    captured[color].forEach(p=>{const span=document.createElement('span');span.className='captures-piece';span.textContent=PIECE_SYMBOLS[p.color][p.type];piecesEl.appendChild(span);});
+    const diff=color==='white'?score.diff:-score.diff;scoreEl.textContent=diff>0?'+'+diff:'';
+  });
+}
+function renderBoard(){
+  const boardEl=document.getElementById('board');boardEl.innerHTML='';
+  const{board,shadowQueens:sq,currentTurn}=G;
+  const inCheck=(G.inCheck&&G.inCheck[currentTurn])||isInCheck(board,sq,currentTurn);
+  const kingPos=findKing(board,currentTurn);
+  const myTurn=myRole!=='spectator'&&currentTurn===myRole&&bothChosen(G)&&!waitingForOpponent&&!G.gameOver;
+  const legalMoves=selectedSq&&myTurn?getLegalMoves(G,selectedSq.row,selectedSq.col):[];
+  const flipped=myRole==='black';
+  for(let ri=0;ri<8;ri++)for(let ci=0;ci<8;ci++){
+    const row=flipped?7-ri:ri,col=flipped?7-ci:ci;
+    const sqEl=document.createElement('div');
+    sqEl.className='sq '+((row+col)%2===0?'light':'dark');
+    sqEl.dataset.row=row;sqEl.dataset.col=col;
+    if(flipped?(ci===7):(ci===0)){const s=document.createElement('span');s.className='coord coord-rank';s.textContent=R[row];sqEl.appendChild(s);}
+    if(ri===7){const s=document.createElement('span');s.className='coord coord-file';s.textContent=F[col];sqEl.appendChild(s);}
+    const piece=board[row][col];
+    if(piece){
+      const pEl=document.createElement('span');pEl.className='piece p-'+(piece[0]==='w'?'white':'black');pEl.textContent=pieceChar(piece);sqEl.appendChild(pEl);
+      const dot=document.createElement('div');dot.className='shadow-dot';
+      const pColor=piece[0]==='w'?'white':'black',sqd=sq[pColor];
+      if(sqd&&sqd.row===row&&sqd.col===col&&(myRole==='spectator'||pColor===myRole)){dot.classList.add('visible');if(sqd.revealed)dot.classList.add('revealed');}
+      sqEl.appendChild(dot);
+    }
+    if(selectedSq&&selectedSq.row===row&&selectedSq.col===col)sqEl.classList.add('selected');
+    if(G.lastMove&&G.lastMove.fr===row&&G.lastMove.fc===col)sqEl.classList.add('last-move-from');
+    if(G.lastMove&&G.lastMove.tr===row&&G.lastMove.tc===col)sqEl.classList.add('last-move-to');
+    if(inCheck&&kingPos&&kingPos.row===row&&kingPos.col===col)sqEl.classList.add('check-sq');
+    const lm=legalMoves.find(m=>m.row===row&&m.col===col);
+    if(lm)sqEl.classList.add(board[row][col]?'valid-capture':'valid-move');
+    sqEl.addEventListener('click',()=>handleClick(row,col));
+    boardEl.appendChild(sqEl);
+  }
+  const statusEl=document.getElementById('status-display'),turnEl=document.getElementById('turn-display');
+  if(G.gameOver||isCheckmate(G)){
+    const winner=G.currentTurn==='white'?'Black':'White';
+    statusEl.textContent='CHECKMATE — '+winner+' wins!';
+    if(!G.gameOver){G.gameOver=true;if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+      // Record result for logged-in user
+      if(currentUser&&myRole){const iWon=(winner.toLowerCase()===myRole)?false:true;recordGameResult(iWon);}
+    }
+  }
+  else if(isStalemate(G)){statusEl.textContent='STALEMATE — Draw!';if(!G.gameOver){G.gameOver=true;if(currentUser&&myRole)recordGameResult(false);}}
+  else if(inCheck){statusEl.textContent='CHECK! ♔';}
+  else if(blackReadyMsg&&myRole==='white'&&!G.gameOver){statusEl.style.color='#5ec87a';statusEl.textContent='Black is ready — your move!';}
+  else{statusEl.textContent='';statusEl.style.color='';}
+  turnEl.textContent=(currentTurn==='white'?'White':'Black')+"'s Turn";
+  const actBtn=document.getElementById('btn-activate'),sqBanner=document.getElementById('sq-phase-banner');
+  if(myRole==='spectator'||waitingForOpponent||G.gameOver){actBtn.disabled=true;actBtn.style.display='none';sqBanner.style.display='none';}
+  else if(bothChosen(G)){actBtn.style.display='none';sqBanner.style.display='none';actBtn.disabled=true;}
+  else if(!G.sqChosen[myRole]){actBtn.style.display='block';sqBanner.style.display='block';if(selectedSq){const p=board[selectedSq.row][selectedSq.col];if(p&&p[0]===myRole[0]&&p[1]!=='k'&&p[1]!=='q'){actBtn.disabled=false;sqBanner.textContent='⬡ Click "Activate Shadow Queen" to empower the selected piece';}else{actBtn.disabled=true;sqBanner.textContent='Select any of your pieces (not King or Queen) to become your Shadow Queen';}}else{actBtn.disabled=true;sqBanner.textContent='Select any of your pieces (not King or Queen) to become your Shadow Queen';}}
+  else if(!bothChosen(G)){sqBanner.style.display='block';sqBanner.textContent='Waiting for opponent to activate their Shadow Queen…';actBtn.disabled=true;}
+  else{sqBanner.style.display='none';actBtn.disabled=true;}
+  const logEl=document.getElementById('move-log');
+  logEl.innerHTML=G.moveLog.map((m,i)=>{const num=Math.floor(i/2)+1;return i%2===0?`<span style="color:var(--text-dim)">${num}.</span> ${m}`:m;}).join(' ');
+  document.getElementById('move-log-wrap').scrollTop=9999;
+  if(myRole==='spectator'){const sw=G.shadowQueens.white,sb=G.shadowQueens.black;document.getElementById('spec-white').textContent=sw?sqName(sw.row,sw.col)+(sw.revealed?' (revealed)':''):(G.sqChosen.white?'Hidden':'Not activated');document.getElementById('spec-black').textContent=sb?sqName(sb.row,sb.col)+(sb.revealed?' (revealed)':''):(G.sqChosen.black?'Hidden':'Not activated');}
+  document.getElementById('waiting-overlay').style.display=waitingForOpponent?'flex':'none';
+  renderCaptures(board);
+  if(bothChosen(G)&&!waitingForOpponent){const now=Date.now();const elapsed=G.lastMoveAt?Math.floor((now-G.lastMoveAt)/1000):0;const effective={...G.timeRemaining};effective[G.currentTurn]=Math.max(0,effective[G.currentTurn]-elapsed);updateTimerUI(effective,G.currentTurn);}
+}
+
+// ══════════════════════════════════════════════
+// INTERACTION (unchanged)
+// ══════════════════════════════════════════════
+function handleClick(row,col){
+  if(G.gameOver||myRole==='spectator'||waitingForOpponent)return;
+  if(reviewIndex!==-1){reviewIndex=-1;renderBoard();updateReviewControls();return;}
+  if(pendingMoveConfirm)return;
+  const piece=G.board[row][col],pColor=piece?piece[0]==='w'?'white':'black':null;
+  if(!G.sqChosen[myRole]){if(piece&&pColor===myRole&&piece[1]!=='k'&&piece[1]!=='q')selectedSq={row,col};else selectedSq=null;renderBoard();return;}
+  if(!bothChosen(G))return;
+  if(G.currentTurn!==myRole)return;
+  if(!selectedSq){if(piece&&pColor===myRole){selectedSq={row,col};renderBoard();}return;}
+  if(selectedSq.row===row&&selectedSq.col===col){selectedSq=null;renderBoard();return;}
+  if(piece&&pColor===myRole){selectedSq={row,col};renderBoard();return;}
+  if(isLegal(G,selectedSq.row,selectedSq.col,row,col)){
+    const p=G.board[selectedSq.row][selectedSq.col];
+    if(p&&p[1]==='p'&&(row===0||row===7)){const sqd=G.shadowQueens[myRole];if(!sqd||sqd.row!==selectedSq.row||sqd.col!==selectedSq.col){pendingPromotion={fr:selectedSq.row,fc:selectedSq.col,tr:row,tc:col};selectedSq=null;showPromotion(myRole);return;}}
+    showMoveConfirm(selectedSq.row,selectedSq.col,row,col,null);return;
+  }
+  selectedSq=null;renderBoard();
+}
+function showMoveConfirm(fr,fc,tr,tc,promo){
+  pendingMoveConfirm={fr,fc,tr,tc,promo};selectedSq=null;
+  renderBoardWithPreview(fr,fc,tr,tc);
+  const bar=document.getElementById('confirm-bar'),msg=document.getElementById('confirm-msg');
+  const piece=G.board[fr][fc];
+  const pName=piece?{k:'King',q:'Queen',r:'Rook',b:'Bishop',n:'Knight',p:'Pawn'}[piece[1]]:'';
+  msg.textContent=pName+' '+F[fc]+R[fr]+' → '+F[tc]+R[tr];
+  bar.classList.add('visible');
+  setTimeout(()=>bar.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+}
+function renderBoardWithPreview(fr,fc,tr,tc){
+  renderBoard();
+  document.getElementById('board').querySelectorAll('.sq').forEach(sq=>{
+    const r=parseInt(sq.dataset.row),c=parseInt(sq.dataset.col);
+    if(r===fr&&c===fc){sq.style.opacity='0.4';}
+    if(r===tr&&c===tc){const piece=G.board[fr][fc];if(piece){const existing=sq.querySelector('.piece');if(existing)existing.remove();const pEl=document.createElement('span');pEl.className='piece p-'+(piece[0]==='w'?'white':'black');pEl.style.opacity='0.7';pEl.textContent=pieceChar(piece);sq.insertBefore(pEl,sq.firstChild);sq.style.background='rgba(201,168,76,0.4)';}}
+  });
+}
+function cancelMoveConfirm(){pendingMoveConfirm=null;document.getElementById('confirm-bar').classList.remove('visible');selectedSq=null;renderBoard();}
+function commitMove(fr,fc,tr,tc,promo){
+  stopFlashing();blackReadyMsg=false;pendingMoveConfirm=null;
+  document.getElementById('confirm-bar').classList.remove('visible');
+  G=applyMove(G,fr,fc,tr,tc,promo);selectedSq=null;
+  if(G.revealedThisMove&&G.revealedThisMove.length>0)showRevealFlash(G.revealedThisMove);
+  boardHistory.push(JSON.parse(JSON.stringify(G)));reviewIndex=-1;updateReviewControls();
+  renderBoard();
+  if(myRole==='white'){writeGameState(G);}else if(myRole==='black'){writeBlackMove(fr,fc,tr,tc,promo);}
+  if(bothChosen(G))startTimerTick();
+}
+function showPromotion(color){
+  const modal=document.getElementById('promo-modal'),choices=document.getElementById('promo-choices');
+  choices.innerHTML='';
+  const opts=color==='white'?[['♕','q'],['♖','r'],['♗','b'],['♘','n']]:[['♛','q'],['♜','r'],['♝','b'],['♞','n']];
+  opts.forEach(([ch,code])=>{const btn=document.createElement('div');btn.className='promo-btn';btn.textContent=ch;btn.onclick=()=>{modal.classList.remove('active');const{fr,fc,tr,tc}=pendingPromotion;pendingPromotion=null;commitMove(fr,fc,tr,tc,code);};choices.appendChild(btn);});
+  modal.classList.add('active');
+}
+document.getElementById('btn-activate').addEventListener('click',()=>{
+  if(!selectedSq||myRole==='spectator'||waitingForOpponent||G.sqChosen[myRole])return;
+  const newGs=activateShadowQueen(G,selectedSq.row,selectedSq.col);if(!newGs)return;
+  G=newGs;const sqPos=newGs.shadowQueens[myRole];selectedSq=null;renderBoard();
+  if(myRole==='white'){writeGameState(G);if(bothChosen(G)){G={...G,lastMoveAt:Date.now()};writeGameState(G);startTimerTick();}}
+  else if(myRole==='black'){writeBlackActivate(sqPos.row,sqPos.col);}
+});
+document.getElementById('btn-accept-move').addEventListener('click',()=>{
+  if(!pendingMoveConfirm)return;
+  const{fr,fc,tr,tc,promo}=pendingMoveConfirm;
+  const piece=G.board[fr][fc];
+  if(piece&&piece[1]==='p'&&(tr===0||tr===7)&&promo===null){const sqd=G.shadowQueens[myRole];const isSQpawn=sqd&&sqd.row===fr&&sqd.col===fc;if(!isSQpawn){pendingPromotion={fr,fc,tr,tc};document.getElementById('confirm-bar').classList.remove('visible');showPromotion(myRole);return;}}
+  commitMove(fr,fc,tr,tc,promo);
+});
+document.getElementById('btn-cancel-move').addEventListener('click',cancelMoveConfirm);
+
+// ══════════════════════════════════════════════
+// FIREBASE SUBSCRIPTION (unchanged)
+// ══════════════════════════════════════════════
+let lastBlackActionTs=0;
+function subscribeToGame(){
+  if(!db||!roomId)return;if(gameUnsubscribe)gameUnsubscribe();
+  const viewKey=myRole==='white'?'state':myRole==='black'?'view_black':'view_spectator';
+  const gRef=ref(db,`games/${roomId}/${viewKey}`);
+  const unsub1=onValue(gRef,(snap)=>{
+    if(!snap.exists())return;if(isWriting&&myRole==='white')return;
+    const data=snap.val();
+    try{
+      const remote=deserializeGameState(data);
+      if(myRole!=='spectator'){const myKnown=G.shadowQueens[myRole];G={...remote};if(!G.shadowQueens[myRole]&&myKnown){const piece=G.board[myKnown.row]&&G.board[myKnown.row][myKnown.col];const valid=piece&&piece[0]===myRole[0]&&piece[1]!=='k'&&piece[1]!=='q';if(valid)G={...G,shadowQueens:{...G.shadowQueens,[myRole]:myKnown}};}}
+      else{G={...remote};}
+      waitingForOpponent=false;
+      document.getElementById('conn-dot').classList.add('online');
+      document.getElementById('conn-label').textContent='Connected · Firebase';
+      boardHistory=[JSON.parse(JSON.stringify(G))];reviewIndex=-1;updateReviewControls();
+      renderBoard();if(bothChosen(G)&&!G.gameOver)startTimerTick();
+      if(G.currentTurn===myRole&&!G.gameOver&&bothChosen(G))notifyMyTurn();
+    }catch(e){console.error('Deserialize error:',e);}
+  });
+  if(myRole==='white'){
+    const actionRef=ref(db,`games/${roomId}/black_action`);
+    const unsub2=onValue(actionRef,(snap)=>{
+      if(!snap.exists())return;const action=snap.val();
+      if(!action||!action.ts||action.ts<=lastBlackActionTs)return;lastBlackActionTs=action.ts;
+      if(action.type==='move'){
+        const promo=action.promo==='none'?null:action.promo;
+        if(!isLegal(G,action.fr,action.fc,action.tr,action.tc)){writeGameState(G);return;}
+        G=applyMove(G,action.fr,action.fc,action.tr,action.tc,promo);
+        if(G.revealedThisMove&&G.revealedThisMove.length>0)showRevealFlash(G.revealedThisMove);
+        boardHistory.push(JSON.parse(JSON.stringify(G)));reviewIndex=-1;updateReviewControls();
+        renderBoard();startTimerTick();writeGameState(G);
+        if(G.currentTurn===myRole&&!G.gameOver)notifyMyTurn();
+      }else if(action.type==='activate'){
+        const blackSq={row:action.sqRow,col:action.sqCol,revealed:false};
+        G={...G,sqChosen:{...G.sqChosen,black:true},shadowQueens:{...G.shadowQueens,black:blackSq}};
+        blackReadyMsg=true;document.getElementById('conn-label').textContent='Black is ready!';
+        if(bothChosen(G)){G={...G,lastMoveAt:Date.now()};startTimerTick();}
+        renderBoard();writeGameState(G);
+      }
+    });
+    gameUnsubscribe=()=>{off(gRef);off(actionRef);};
+  }else{gameUnsubscribe=()=>off(gRef);}
+}
+
+// ══════════════════════════════════════════════
+// LOBBY (unchanged)
+// ══════════════════════════════════════════════
+document.getElementById('time-select').addEventListener('change',function(){
+  document.getElementById('custom-time-row').style.display=this.value==='custom'?'block':'none';
+});
+function getTimeLimitSecs(){const sel=document.getElementById('time-select').value;if(sel==='custom'){const mins=parseInt(document.getElementById('custom-minutes').value)||60;return mins*60;}return parseInt(sel);}
+function genRoomId(){return Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10);}
+document.getElementById('btn-create').addEventListener('click',async()=>{
+  if(!db){alert('Firebase not connected.');return;}
+  myRole='white';document.getElementById('btn-create').disabled=true;
+  document.getElementById('lobby-msg').textContent='Creating game in Firebase…';
+  const limit=getTimeLimitSecs();G=initGameState();G.timeLimitSecs=limit;G.timeRemaining={white:limit,black:limit};
+  roomId=genRoomId();sessionStorage.setItem('sqc_room',roomId);sessionStorage.setItem('sqc_role','white');
+  try{
+    await set(ref(db,`games/${roomId}/state`),serializeGameState(G));
+    await set(ref(db,`games/${roomId}/view_black`),serializeGameState(sanitizeForRole(G,'black')));
+    await set(ref(db,`games/${roomId}/view_spectator`),serializeGameState(sanitizeForRole(G,null)));
+    await set(ref(db,`games/${roomId}/meta`),{
+      created:Date.now(),whiteJoined:true,blackJoined:false,
+      whiteUid:currentUser?currentUser.uid:'guest',
+      whiteName:currentUser?(currentUser.displayName||currentUser.email||'White'):'Guest'
+    });
+  }catch(e){document.getElementById('lobby-msg').textContent='Firebase error: '+e.message;return;}
+  const baseUrl=window.location.href.split('?')[0];const blackUrl=baseUrl+'?room='+roomId;
+  document.getElementById('share-box').style.display='block';
+  document.getElementById('share-url').textContent=blackUrl;
+  document.getElementById('copy-btn').onclick=()=>{navigator.clipboard.writeText(blackUrl).then(()=>{document.getElementById('copy-btn').textContent='✓ Copied!';setTimeout(()=>document.getElementById('copy-btn').textContent='Copy Opponent Link',2000);});};
+  document.getElementById('lobby-msg').textContent='Game saved — send the link to your opponent, then enter the game.';
+  const goBtn=document.createElement('button');goBtn.className='btn';goBtn.style.marginTop='10px';goBtn.textContent='Enter Game as White ▸';
+  goBtn.onclick=()=>{goBtn.remove();enterGame();subscribeToGame();};
+  document.getElementById('lobby-msg').after(goBtn);
+});
+document.getElementById('btn-join').addEventListener('click',()=>joinAs('black'));
+document.getElementById('btn-spectate').addEventListener('click',()=>joinAs('spectator'));
+async function joinAs(role){
+  if(!db){alert('Firebase not connected.');return;}
+  const inputId=role==='spectator'?'spectate-code':'join-code';
+  let rid=document.getElementById(inputId).value.trim();
+  if(rid.includes('?room='))rid=rid.split('?room=')[1];
+  if(!rid){document.getElementById('lobby-msg').textContent='Please paste an invite link.';return;}
+  document.getElementById('lobby-msg').textContent='Looking up game…';
+  try{const snap=await get(ref(db,`games/${rid}/state`));if(!snap.exists()){document.getElementById('lobby-msg').textContent='Room not found.';return;}}
+  catch(e){document.getElementById('lobby-msg').textContent='Firebase error: '+e.message;return;}
+  myRole=role;roomId=rid;
+  sessionStorage.setItem('sqc_room',roomId);sessionStorage.setItem('sqc_role',myRole);
+  enterGame();subscribeToGame();requestNotifPermission();
+}
+
+// ══════════════════════════════════════════════
+// REVIEW CONTROLS (unchanged)
+// ══════════════════════════════════════════════
+function updateReviewControls(){
+  const bar=document.getElementById('review-bar'),counter=document.getElementById('review-counter'),liveLabel=document.getElementById('review-live-label');
+  const btnFirst=document.getElementById('btn-review-first'),btnPrev=document.getElementById('btn-review-prev'),btnNext=document.getElementById('btn-review-next'),btnLast=document.getElementById('btn-review-last');
+  if(boardHistory.length===0){bar.classList.remove('visible');return;}bar.classList.add('visible');
+  const isLive=reviewIndex===-1,idx=isLive?boardHistory.length-1:reviewIndex;
+  counter.textContent=(idx+1)+' / '+boardHistory.length;liveLabel.style.display=isLive?'inline':'none';
+  btnFirst.disabled=idx===0;btnPrev.disabled=idx===0;btnNext.disabled=isLive;btnLast.disabled=isLive;
+}
+function renderReviewBoard(){const idx=reviewIndex===-1?boardHistory.length-1:reviewIndex;if(idx<0||!boardHistory[idx])return;const live=G;G=boardHistory[idx];renderBoard();G=live;updateReviewControls();}
+document.getElementById('btn-review-first').addEventListener('click',()=>{if(boardHistory.length===0)return;reviewIndex=0;renderReviewBoard();});
+document.getElementById('btn-review-prev').addEventListener('click',()=>{if(boardHistory.length===0)return;const cur=reviewIndex===-1?boardHistory.length-1:reviewIndex;reviewIndex=Math.max(0,cur-1);renderReviewBoard();});
+document.getElementById('btn-review-next').addEventListener('click',()=>{if(reviewIndex===-1||boardHistory.length===0)return;reviewIndex=Math.min(boardHistory.length-1,reviewIndex+1);if(reviewIndex===boardHistory.length-1)reviewIndex=-1;reviewIndex===-1?renderBoard():renderReviewBoard();updateReviewControls();});
+document.getElementById('btn-review-last').addEventListener('click',()=>{reviewIndex=-1;renderBoard();updateReviewControls();});
+
+// ══════════════════════════════════════════════
+// ENTER GAME (unchanged)
+// ══════════════════════════════════════════════
+function enterGame(){
+  document.getElementById('lobby').style.display='none';document.getElementById('game').style.display='block';
+  document.getElementById('stats-card').classList.remove('visible');
+  const badge=document.getElementById('my-badge');
+  if(myRole==='white'){badge.className='player-badge badge-white';badge.textContent='♔ Playing White';document.getElementById('btn-leave').style.display='block';}
+  else if(myRole==='black'){badge.className='player-badge badge-black';badge.textContent='♚ Playing Black';}
+  else{badge.className='player-badge badge-spectator';badge.textContent='👁 Spectator';}
+  if(myRole==='spectator'){document.getElementById('spectator-panel').style.display='block';document.getElementById('btn-activate').style.display='none';}
+  document.getElementById('conn-label').textContent='Connecting to Firebase…';
+  renderBoard();requestNotifPermission();
+}
+
+// ══════════════════════════════════════════════
+// LEAVE GAME (unchanged)
+// ══════════════════════════════════════════════
+function showLeaveModal(){
+  if(myRole!=='white'||!roomId)return;
+  const whiteUrl=window.location.href.split('?')[0]+'?room='+roomId+'&role=white';
+  document.getElementById('leave-white-url').textContent=whiteUrl;
+  const copyBtn=document.getElementById('leave-copy-btn');
+  copyBtn.textContent='Copy My Link';
+  copyBtn.onclick=()=>{navigator.clipboard.writeText(whiteUrl).then(()=>{copyBtn.textContent='✓ Copied!';setTimeout(()=>copyBtn.textContent='Copy My Link',2000);});};
+  document.getElementById('leave-modal').classList.add('active');
+}
+document.getElementById('leave-close-btn').addEventListener('click',()=>{document.getElementById('leave-modal').classList.remove('active');});
+document.getElementById('btn-leave').addEventListener('click',showLeaveModal);
+window.addEventListener('beforeunload',(e)=>{if(myRole==='white'&&roomId&&!G.gameOver){showLeaveModal();e.preventDefault();e.returnValue='';}});
+
+// ══════════════════════════════════════════════
+// AUTO-REJOIN
+// ══════════════════════════════════════════════
+function handleAutoRejoin(){
+  const params=new URLSearchParams(window.location.search);
+  const r=params.get('room');const roleParam=params.get('role');
+  if(!r||!db)return;
+  if(roleParam==='white'){myRole='white';roomId=r;sessionStorage.setItem('sqc_room',r);sessionStorage.setItem('sqc_role','white');setTimeout(()=>{if(db){enterGame();subscribeToGame();}},300);return;}
+  const savedRoom=sessionStorage.getItem('sqc_room');const savedRole=sessionStorage.getItem('sqc_role');
+  if(savedRoom&&savedRole&&savedRoom===r){myRole=savedRole;roomId=savedRoom;setTimeout(()=>{if(db){enterGame();subscribeToGame();}},300);}
+}
+
+</script>
+</body>
+</html>
